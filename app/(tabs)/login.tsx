@@ -5,6 +5,7 @@ import { Text, View } from "@/components/Themed";
 import UsableScreen from "@/components/usableScreen";
 import Colors from "@/constants/Colors";
 import { AppContext } from "@/contexts/appContext";
+import { ServerSyncContainer } from "@/demo/serverSyncContainer";
 import { Player } from "@/model/playerType";
 import { fetchWithTimeout } from "@/service/serviceUtils";
 import { useFocusEffect } from "expo-router";
@@ -39,11 +40,16 @@ export default function LoginScreen() {
   return (
     <UsableScreen>
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ fontWeight: "bold", fontSize: 20 }}>Login</Text>
+        <Text style={{ fontWeight: "bold", fontSize: 20 }}>Setup</Text>
       </View>
       <View style={{ flex: 3, alignItems: "center", padding: 20 }}>
         {!isServerOnline ? (
-          <Text>Server not available</Text>
+          <View style={{ alignItems: "center" }}>
+            <View style={{ paddingBottom: 40 }}>
+              <Text>Server not available</Text>
+            </View>
+            <ServerSyncContainer />
+          </View>
         ) : (
           players?.map((player: Player) => (
             <View

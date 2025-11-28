@@ -1,6 +1,10 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import CustomPressable from "@/components/customPressable";
+import {
+  createNotification,
+  NotificationBox,
+} from "@/components/notificationBox/NotificationBox";
 import UsableScreen from "@/components/usableScreen";
 import Colors from "@/constants/Colors";
 import { AppContext } from "@/contexts/appContext";
@@ -11,8 +15,9 @@ import { PlaneJob } from "@/model/planeJobType";
 import { Player } from "@/model/playerType";
 import { fetchWithTimeout } from "@/service/serviceUtils";
 import { text } from "@/styling/commonStyle";
+import { eventEmitter, NotificationEvent } from "@/utility/eventEmitter";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useContext, useState } from "react";
+import { Dispatch, useCallback, useContext, useState } from "react";
 
 const PlayerHeader = ({ player }: { player: Player }) => (
   <View
@@ -110,13 +115,13 @@ const HangarDetails = ({ hangar }: { hangar: Hangar }) => (
       }}
     >
       <View style={{ width: "30%", alignItems: "flex-start" }}>
-        <Text>Fuel {hangar.currentFuel}lb</Text>
+        <Text>Fuel {hangar.currentFuel?.toFixed(1)}lb</Text>
       </View>
       <View style={{ width: "30%", alignItems: "center" }}>
-        <Text>Engine {hangar.statusEngine}</Text>
+        <Text>Engine {hangar.statusEngine?.toFixed(0)}</Text>
       </View>
       <View style={{ width: "30%", alignItems: "flex-end" }}>
-        <Text>Hull {hangar.statusHull}</Text>
+        <Text>Hull {hangar.statusHull?.toFixed(0)}</Text>
       </View>
     </View>
   </View>
@@ -151,7 +156,13 @@ const AircraftDetails = ({ aircraft }: { aircraft: Aircraft }) => (
   </View>
 );
 
-const ActiveJobsDetails = ({ job }: { job: Job }) => (
+const ActiveJobsDetails = ({
+  job,
+  handleRemoveJob,
+}: {
+  job: Job;
+  handleRemoveJob: () => Promise<void>;
+}) => (
   <View
     style={{
       gap: 10,
@@ -160,7 +171,16 @@ const ActiveJobsDetails = ({ job }: { job: Job }) => (
       borderRadius: 10,
     }}
   >
-    <Text style={text.title}>{job.nameAirport}</Text>
+    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+      <Text style={text.title}>{job.nameAirport}</Text>
+      <CustomPressable
+        color={Colors.dark.accent}
+        text={"-"}
+        padding={10}
+        paddingVertical={5}
+        onPress={handleRemoveJob}
+      />
+    </View>
     <View
       style={{
         flexDirection: "row",
@@ -196,6 +216,35 @@ const ActiveJobsDetails = ({ job }: { job: Job }) => (
   </View>
 );
 
+const handleRemoveJob = async (
+  job: Job,
+  server: string,
+  setRefresh: Dispatch<React.SetStateAction<boolean>>
+) => {
+  try {
+    const resJson = await fetchWithTimeout(
+      `http://${server}:8080/nf/plane-jobs/${job.id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const res = await resJson?.json();
+
+    if (res.status != 200) {
+      console.log(res);
+      eventEmitter.emit(
+        NotificationEvent,
+        createNotification("Failed to remove job.", Colors.dark.warning)
+      );
+    }
+  } catch (e) {
+    console.log(e);
+  } finally {
+    setRefresh((r) => !r);
+  }
+};
+
 export default function HomeScreen() {
   const {
     serverConfig: [server],
@@ -228,15 +277,27 @@ export default function HomeScreen() {
           `http://${server}:8080/nf/aircraft/player/${player.name}`
         );
 
-        let maxPayloadlbs = 0;
+        let maxPayloadlbs = 0,
+          maxDistance = 0,
+          maxFuelCap = 0,
+          maxSpeed = 0;
         if (aircraftJson) {
-          const aircraftData = await aircraftJson?.json();
-          maxPayloadlbs = (aircraftData.data as Aircraft).maxPayloadlbs;
-          setAircraft(aircraftData.data);
+          const aircraftData: Aircraft = (await aircraftJson?.json()).data;
+          maxPayloadlbs = aircraftData.maxPayloadlbs;
+          maxDistance = aircraftData.rangenm;
+          maxFuelCap = aircraftData.fuelCaplbs;
+          maxSpeed = aircraftData.cruiseSpeedktas;
+          setAircraft(aircraftData);
         }
 
         const usablePayload = maxPayloadlbs - 170 - fuelWeight;
-        setPlayer((p) => ({ ...p, usablePayload: usablePayload }));
+        setPlayer((p) => ({
+          ...p,
+          usablePayload: usablePayload,
+          maxDistance: maxDistance,
+          fuelPercentage: fuelWeight / maxFuelCap,
+          maxSpeed: maxSpeed * 0.8,
+        }));
         let jobsJson;
 
         if (usablePayload) {
@@ -282,6 +343,7 @@ export default function HomeScreen() {
 
   return (
     <UsableScreen>
+      <NotificationBox />
       <PlayerHeader player={player} />
       <View
         style={{
@@ -307,11 +369,11 @@ export default function HomeScreen() {
         }}
       >
         <Text style={[text.title, { fontSize: 20 }]}>Active Jobs</Text>
-        {player.usablePayload && (
+        {player.freePayload && (
           <Text>
             <Text>Free Payload </Text>
             <Text>
-              {player.freePayload}
+              {player.freePayload.toFixed(0)}
               lb
             </Text>
           </Text>
@@ -326,7 +388,13 @@ export default function HomeScreen() {
         }}
       >
         {activeJobs.map((job) => (
-          <ActiveJobsDetails key={job.id} job={job} />
+          <ActiveJobsDetails
+            key={job.id}
+            job={job}
+            handleRemoveJob={async () =>
+              await handleRemoveJob(job, server, setRefresh)
+            }
+          />
         ))}
       </ScrollView>
     </UsableScreen>

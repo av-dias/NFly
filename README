@@ -4,3 +4,8 @@
 
 - 1.0.0
   - Initial Version with basic UI elements
+- 1.1.0
+  - Feature to add and remove jobs
+  - Filter jobs by range
+  - Estimated job information
+  - View stacked jobs

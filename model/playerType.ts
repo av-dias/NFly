@@ -10,4 +10,7 @@ export type Player = {
   reputation: number;
   usablePayload?: number;
   freePayload?: number;
+  maxDistance?: number;
+  fuelPercentage?: number;
+  maxSpeed?: number;
 };

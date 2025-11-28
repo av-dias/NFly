@@ -44,12 +44,8 @@ export const daysTillEndOfMonth = (month: number) => {
   }
 };
 
-// Define bimonthly periods (startMonth: endMonth)
-export const bimonthlyPeriods: [number, number][] = [
-  [1, 3], // Jan 15–Mar 15
-  [3, 5], // Mar 15–May 15
-  [5, 7], // May 15–Jul 15
-  [7, 9], // Jul 15–Sep 15
-  [9, 11], // Sep 15–Nov 15
-  [11, 1], // Nov 15–Jan 15
-];
+export const loadHoursMinutes = (time: number) => {
+  const hours = Math.floor(time);
+  const minutes = Math.round((time - hours) * 60);
+  return `${hours}h${minutes}m`;
+};
