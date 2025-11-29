@@ -1,10 +1,9 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-
 import CustomPressable from "@/components/customPressable";
 import {
   createNotification,
   NotificationBox,
 } from "@/components/notificationBox/NotificationBox";
+import { Text, View } from "@/components/Themed";
 import UsableScreen from "@/components/usableScreen";
 import Colors from "@/constants/Colors";
 import { AppContext } from "@/contexts/appContext";
@@ -18,6 +17,7 @@ import { text } from "@/styling/commonStyle";
 import { eventEmitter, NotificationEvent } from "@/utility/eventEmitter";
 import { useFocusEffect } from "expo-router";
 import { Dispatch, useCallback, useContext, useState } from "react";
+import { ScrollView, StyleSheet } from "react-native";
 
 const PlayerHeader = ({ player }: { player: Player }) => (
   <View

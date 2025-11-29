@@ -4,7 +4,7 @@ const tintColorDark = "#fff";
 export default {
   light: {
     text: "#000",
-    background: "#fff",
+    background: "rgba(0,0,0,0)",
     secundaryBackground: "#d3e4ecff",
     tint: tintColorLight,
     tabIconDefault: "#ccc",
@@ -16,8 +16,8 @@ export default {
     glass: "#6c9aa82c",
   },
   dark: {
-    text: "#fff",
-    background: "#000",
+    text: "#000",
+    background: "rgba(0,0,0,0)",
     secundaryBackground: "#d3e4ecff",
     tint: tintColorDark,
     tabIconDefault: "#ccc",
