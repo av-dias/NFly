@@ -1,3 +1,5 @@
+import { Airport } from "./airportType";
+
 export type Job = {
   id: number;
   departure: string;
@@ -23,4 +25,5 @@ export type Job = {
   stackable: number;
   source: number;
   aircraftType: number;
+  airport?: Airport;
 };
