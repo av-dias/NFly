@@ -1,4 +1,5 @@
 import { Airport } from "./airportType";
+import { Good } from "./goodType";
 
 export type Job = {
   id: number;
@@ -26,4 +27,5 @@ export type Job = {
   source: number;
   aircraftType: number;
   airport?: Airport;
+  good?: Good;
 };

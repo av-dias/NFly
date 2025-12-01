@@ -8,6 +8,8 @@ import {
 import { Text, View } from "@/components/Themed";
 import UsableScreen from "@/components/usableScreen";
 import Colors from "@/constants/Colors";
+import { GOOD_TYPE } from "@/constants/GoodType";
+import { MISSION_TYPE } from "@/constants/MissionType";
 import { AppContext } from "@/contexts/appContext";
 import { Job } from "@/model/jobType";
 import { Player } from "@/model/playerType";
@@ -80,7 +82,13 @@ const JobDetails = ({
       </Text>
     </View>
 
-    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+    <View
+      style={{
+        flexDirection: "row",
+        justifyContent: "space-between",
+        paddingVertical: 1,
+      }}
+    >
       <View style={{ width: isSmall ? 50 : "30%", alignItems: "flex-start" }}>
         <Text>
           <Text>Cash {job.reward}</Text>
@@ -123,7 +131,14 @@ const JobDetails = ({
     </View>
 
     {!isSmall && (
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingVertical: 2,
+          alignItems: "center",
+        }}
+      >
         <View
           style={{
             width: "30%",
@@ -131,11 +146,13 @@ const JobDetails = ({
             gap: 2,
           }}
         >
-          <MaterialCommunityIcons
-            name="map-marker-distance"
-            size={16}
-            color="gray"
-          />
+          <View style={{ justifyContent: "center" }}>
+            <MaterialCommunityIcons
+              name="map-marker-distance"
+              size={16}
+              color="gray"
+            />
+          </View>
           <Text>
             {departureAirport !== null &&
             departureAirport?.airport &&
@@ -156,16 +173,41 @@ const JobDetails = ({
           </Text>
         </View>
         <View style={{ width: "30%", alignItems: "center" }}>
-          <Text>Exp {job.xp}</Text>
-        </View>
-        <View style={{ width: "30%", alignItems: "flex-end" }}>
           <Text>Rank {job.rank}</Text>
+        </View>
+        <View
+          style={{
+            width: "30%",
+            justifyContent: "flex-end",
+            flexDirection: "row",
+            gap: 2,
+            alignItems: "center",
+            paddingVertical: 1,
+          }}
+        >
+          {job?.missionType && MISSION_TYPE[job.missionType] ? (
+            <View>{MISSION_TYPE[job.missionType].icon}</View>
+          ) : (
+            <Text>{job?.missionType || "Unkown"}</Text>
+          )}
+          {job.good && GOOD_TYPE[job.good.type] ? (
+            <View>{GOOD_TYPE[job.good.type].icon}</View>
+          ) : (
+            <Text>{job?.good?.name}</Text>
+          )}
         </View>
       </View>
     )}
 
     {!isSmall && job?.airport && (
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingVertical: 2,
+          alignItems: "center",
+        }}
+      >
         <View
           style={{
             width: "30%",
@@ -174,7 +216,9 @@ const JobDetails = ({
             gap: 2,
           }}
         >
-          <MaterialCommunityIcons name="road" size={15} color="gray" />
+          <View style={{ justifyContent: "center" }}>
+            <MaterialCommunityIcons name="road" size={15} color="gray" />
+          </View>
           <Text>{job.airport.longestRunwayLength}Nm</Text>
         </View>
         <View style={{ width: "30%", alignItems: "center" }}>
@@ -187,21 +231,23 @@ const JobDetails = ({
           </Text>
         </View>
         <View style={{ width: "30%", alignItems: "flex-end" }}>
-          <Text>
-            {job?.airport.nrRunwayLight > 0 ? (
-              <MaterialCommunityIcons
-                name="alarm-light"
-                size={15}
-                color="orange"
-              />
-            ) : (
-              <MaterialCommunityIcons
-                name="alarm-light-off"
-                size={15}
-                color="gray"
-              />
-            )}
-          </Text>
+          <View style={{ justifyContent: "center" }}>
+            <Text>
+              {job?.airport.nrRunwayLight > 0 ? (
+                <MaterialCommunityIcons
+                  name="alarm-light"
+                  size={16}
+                  color="orange"
+                />
+              ) : (
+                <MaterialCommunityIcons
+                  name="alarm-light-off"
+                  size={16}
+                  color="gray"
+                />
+              )}
+            </Text>
+          </View>
         </View>
       </View>
     )}

@@ -17,7 +17,7 @@ import { PlaneJob } from "@/model/planeJobType";
 import { Player } from "@/model/playerType";
 import { fetchWithTimeout } from "@/service/serviceUtils";
 import { text } from "@/styling/commonStyle";
-import { loadHoursMinutes } from "@/utility/calendar";
+import { loadHoursMinutes, LOCALE } from "@/utility/calendar";
 import {
   calculateDistanceNm,
   loadEstimatedFlightTime,
@@ -173,71 +173,82 @@ const ActiveJobsDetails = ({
   handleRemoveJob: () => Promise<void>;
   departureAirport: Job | null;
 }) => (
-  <View
-    style={{
-      gap: 10,
-      backgroundColor: Colors.dark.secundary,
-      padding: 10,
-      borderRadius: 10,
-    }}
-  >
-    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-      <Text style={text.title}>{job.nameAirport}</Text>
-      <CustomPressable
-        color={Colors.dark.accent}
-        text={"-"}
-        padding={10}
-        paddingVertical={5}
-        onPress={handleRemoveJob}
-      />
-    </View>
+  <View>
+    <Text style={{ fontSize: 12, paddingLeft: 5 }}>
+      {new Date(job.expiration).toLocaleString(LOCALE)}
+    </Text>
     <View
       style={{
-        flexDirection: "row",
-        justifyContent: "space-between",
+        gap: 10,
+        backgroundColor: Colors.dark.secundary,
+        padding: 10,
+        borderRadius: 10,
       }}
     >
-      <View style={{ width: "30%", alignItems: "flex-start" }}>
-        <Text>{job.arrival}</Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={text.title}>{job.nameAirport}</Text>
+        <CustomPressable
+          color={Colors.dark.accent}
+          text={"-"}
+          padding={10}
+          paddingVertical={5}
+          onPress={handleRemoveJob}
+        />
       </View>
-      <View style={{ width: "30%", alignItems: "center" }}>
-        <Text>
-          {departureAirport !== null &&
-          departureAirport?.airport &&
-          job?.airport ? (
-            <Text>
-              {calculateDistanceNm(
-                departureAirport.airport?.latitude,
-                departureAirport.airport?.longitude,
-                job.airport?.latitude,
-                job.airport?.longitude
-              )}
-              Nm
-              <Text style={{ color: "lightgray" }}>{` (${job.dist})`}</Text>
-            </Text>
-          ) : (
-            <Text>{job.dist}Nm</Text>
-          )}
-        </Text>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <View style={{ width: "30%", alignItems: "flex-start" }}>
+          <Text>{job.arrival}</Text>
+        </View>
+        <View
+          style={{
+            width: "30%",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text>
+            {departureAirport !== null &&
+            departureAirport?.airport &&
+            job?.airport ? (
+              <Text>
+                {calculateDistanceNm(
+                  departureAirport.airport?.latitude,
+                  departureAirport.airport?.longitude,
+                  job.airport?.latitude,
+                  job.airport?.longitude
+                )}
+                Nm
+                <Text style={{ color: "lightgray" }}>{` (${job.dist})`}</Text>
+              </Text>
+            ) : (
+              <Text>{job.dist}Nm</Text>
+            )}
+          </Text>
+        </View>
+        <View style={{ width: "30%", alignItems: "flex-end" }}>
+          <Text>{job.reward} €</Text>
+        </View>
       </View>
-      <View style={{ width: "30%", alignItems: "flex-end" }}>
-        <Text>{job.reward} €</Text>
-      </View>
-    </View>
-    <View
-      style={{
-        flexDirection: "row",
-        justifyContent: "space-between",
-      }}
-    >
-      <View style={{ width: "30%", alignItems: "flex-start" }}>
-        <Text>{job.weight} lbs</Text>
-      </View>
-      <View style={{ width: "30%", alignItems: "center" }}>
-        <Text>{job.pax} pax</Text>
-      </View>
-      <View style={{ width: "30%", alignItems: "flex-end" }}>
-        <Text>{job.xp} xp</Text>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <View style={{ width: "30%", alignItems: "flex-start" }}>
+          <Text>{job.weight} lbs</Text>
+        </View>
+        <View style={{ width: "30%", alignItems: "center" }}>
+          <Text>{job.pax} pax</Text>
+        </View>
+        <View style={{ width: "30%", alignItems: "flex-end" }}>
+          <Text>{job.xp} xp</Text>
+        </View>
       </View>
     </View>
   </View>
@@ -513,8 +524,7 @@ export default function HomeScreen() {
       <View
         style={{
           flexDirection: "row",
-          padding: 10,
-          paddingVertical: 0,
+          paddingBottom: 10,
           justifyContent: "center",
           alignItems: "center",
         }}

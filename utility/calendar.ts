@@ -28,6 +28,8 @@ export const MONTHS_LONG = [
   "December",
 ];
 
+export const LOCALE = "en-GB";
+
 export const convertDateToMonthString = (date: String): string => {
   const monthIndex = date.split("-")[1];
   return MONTHS_SHORT[Number(monthIndex) - 1];

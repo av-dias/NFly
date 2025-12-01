@@ -11,9 +11,12 @@
   - View stacked jobs
 - 1.2.0
   - Theme update on view and text
-
 - 1.3.0
   - Airport details information per job
   - Corrected time/distance information
   - Timetable for active jobs
   - Flight map with itinerary
+- 1.4.0
+  - Job expiration time
+  - Job Mission type
+  - Cargo Good Type
