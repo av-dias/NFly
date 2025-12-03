@@ -322,6 +322,7 @@ export default function HomeScreen() {
     serverConfig: [server],
     server: [isServerOnline],
     player: [player, setPlayer],
+    setRefreshUser: setRefreshUser,
   } = useContext(AppContext);
 
   const [hangar, setHangar] = useState({} as Hangar);
@@ -457,7 +458,10 @@ export default function HomeScreen() {
           color={Colors.dark.accent}
           text={"Refresh"}
           padding={5}
-          onPress={() => setRefresh((r) => !r)}
+          onPress={() => {
+            setRefresh((r) => !r);
+            setRefreshUser((r) => !r);
+          }}
         />
       </View>
       <HangarDetails hangar={hangar} />

@@ -7,33 +7,22 @@ import Colors from "@/constants/Colors";
 import { AppContext } from "@/contexts/appContext";
 import { ServerSyncContainer } from "@/demo/serverSyncContainer";
 import { Player } from "@/model/playerType";
-import { fetchWithTimeout } from "@/service/serviceUtils";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useContext } from "react";
 
 export default function LoginScreen() {
   const {
     serverConfig: [server],
-    server: [isServerOnline, setIsServerOnline],
-    player: [player, setPlayer],
+    server: [isServerOnline],
+    player: [, setPlayer],
+    players: [players],
+    setRefreshUser: setRefreshUser,
   } = useContext(AppContext);
-  const [players, setPlayers] = useState([]);
 
   useFocusEffect(
     useCallback(() => {
-      async function fetchData() {
-        const playersJson = await fetchWithTimeout(
-          `http://${server}:8080/nf/players`
-        );
-
-        if (playersJson) {
-          const player = await playersJson?.json();
-          setPlayers(player.data);
-          setIsServerOnline(true);
-        }
-      }
-
-      if (server != "") fetchData();
+      console.log("Server: " + server);
+      if (server != "") setRefreshUser((r) => !r);
     }, [server])
   );
 
