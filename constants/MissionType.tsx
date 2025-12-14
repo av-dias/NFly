@@ -16,6 +16,31 @@ export const MISSION_TYPE: Record<number, MissionDetails> = {
     description: "Load cargo and fly it to the destination.",
     icon: <FontAwesome6 name="box-open" size={size - 1} color={color} />,
   },
+  2: {
+    name: "Express",
+    description: "TTL Deadline.",
+    icon: <FontAwesome6 name="box-open" size={size - 1} color={color} />,
+  },
+  3: {
+    name: "Sensitive",
+    description: "Land <200fpm.",
+    icon: <FontAwesome6 name="box-open" size={size - 1} color={color} />,
+  },
+  8: {
+    name: "Sightseeing",
+    description: "Circle POI <=1000ft.",
+    icon: <FontAwesome5 name="monument" size={size - 2} color={color} />,
+  },
+  22: {
+    name: "Transport (PAX)",
+    description: "Transport passengers from one airport to another. ",
+    icon: <MaterialIcons name="flight-takeoff" size={size} color={color} />,
+  },
+  25: {
+    name: "Hazardouse",
+    description: "Land <200fpm.\nPitch <31.\nBank <31.\nVS <500.\n",
+    icon: <FontAwesome6 name="box-open" size={size - 1} color={color} />,
+  },
   92: {
     name: "Humanitarian",
     description:
@@ -27,11 +52,6 @@ export const MISSION_TYPE: Record<number, MissionDetails> = {
     description:
       "Cargo missions with a deadline. Deadline and mail weight are shown in the search table.",
     icon: "m7.png",
-  },
-  8: {
-    name: "Sightseeing",
-    description: "Fly to a Point of Interest. Circle the POI below 1000ft.",
-    icon: <FontAwesome5 name="monument" size={size - 2} color={color} />,
   },
 
   99: {
@@ -81,7 +101,6 @@ export const MISSION_TYPE: Record<number, MissionDetails> = {
       "Fly emergency services to an incident. Land within 3 miles of the emergency for a bonus.",
     icon: "m18.png",
   },
-
   920: {
     name: "Advertising",
     description:
@@ -95,11 +114,6 @@ export const MISSION_TYPE: Record<number, MissionDetails> = {
     description:
       "Fly parachutists to a drop zone. Release them with the parking brake, then return to base for more groups.",
     icon: "r1.png",
-  },
-  22: {
-    name: "Transport (PAX)",
-    description: "Transport passengers from one airport to another. ",
-    icon: <MaterialIcons name="flight-takeoff" size={size} color={color} />,
   },
   923: {
     name: "Helicopter VIPs",
