@@ -1,15 +1,11 @@
-import Badge from "@/components/badge";
 import CustomPressable from "@/components/customPressable";
+import JobDetails from "@/components/jobDetails";
+import JobDetailsCompact from "@/components/jobDetailsCompact";
 import ModalCustom from "@/components/modal/modal";
-import {
-  createNotification,
-  NotificationBox,
-} from "@/components/notificationBox/NotificationBox";
+import { NotificationBox } from "@/components/notificationBox/NotificationBox";
 import { Text, View } from "@/components/Themed";
 import UsableScreen from "@/components/usableScreen";
 import Colors from "@/constants/Colors";
-import { GOOD_TYPE } from "@/constants/GoodType";
-import { MISSION_TYPE } from "@/constants/MissionType";
 import { AppContext } from "@/contexts/appContext";
 import { Job } from "@/model/jobType";
 import { Player } from "@/model/playerType";
@@ -20,239 +16,12 @@ import {
   calculateDistanceNm,
   loadEstimatedFlightTime,
 } from "@/utility/distance";
-import { eventEmitter, NotificationEvent } from "@/utility/eventEmitter";
 import { delay } from "@/utility/timer";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useContext, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet } from "react-native";
+import { FlatList, ScrollView, StyleSheet } from "react-native";
 import LoadingIndicator from "../../components/loadingIndicator";
-
-const JobDetails = ({
-  job,
-  isSelected,
-  handleSelect,
-  isSmall = false,
-  freePayload,
-  departureAirport,
-  index,
-}: {
-  job: Job;
-  isSelected: boolean;
-  handleSelect: () => void;
-  isSmall?: boolean;
-  freePayload?: number;
-  departureAirport: Job | null;
-  index?: number;
-}) => (
-  <Pressable
-    style={{
-      gap: 1,
-      backgroundColor: isSelected ? Colors.dark.accent : Colors.dark.secundary,
-      width: isSmall ? 150 : "100%",
-      padding: 10,
-      borderRadius: 10,
-      overflow: "visible",
-    }}
-    onPress={
-      (freePayload && freePayload > job.weight) || isSmall
-        ? handleSelect
-        : () =>
-            eventEmitter.emit(
-              NotificationEvent,
-              createNotification(
-                "Not enough payload available.",
-                Colors.dark.warning
-              )
-            )
-    }
-  >
-    {isSmall && index != undefined && <Badge text={index} />}
-    <View
-      style={{
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}
-    >
-      <Text style={{ paddingBottom: 10 }}>
-        {!isSmall && <Text style={text.title}>{`${job.nameAirport} `}</Text>}
-        <Text style={isSmall && text.title}>{job.arrival}</Text>
-      </Text>
-    </View>
-
-    <View
-      style={{
-        flexDirection: "row",
-        justifyContent: "space-between",
-        paddingVertical: 1,
-      }}
-    >
-      <View style={{ width: isSmall ? 50 : "30%", alignItems: "flex-start" }}>
-        <Text>
-          <Text>Cash {job.reward}</Text>
-          <Text style={text.symbolSize}>€</Text>
-        </Text>
-      </View>
-      <View style={{ width: isSmall ? 50 : "30%", alignItems: "center" }}>
-        <Text
-          style={{
-            color:
-              freePayload !== undefined && freePayload < job.weight
-                ? "red"
-                : "black",
-          }}
-        >
-          Load {job.weight}lb
-        </Text>
-      </View>
-      {!isSmall ? (
-        <View style={{ width: "30%", alignItems: "flex-end" }}>
-          <Text>Pax {job.pax}</Text>
-        </View>
-      ) : (
-        <View style={{ width: "30%", alignItems: "flex-end" }}>
-          <Text>
-            Nm{" "}
-            {departureAirport !== null &&
-            departureAirport?.airport &&
-            job?.airport
-              ? calculateDistanceNm(
-                  departureAirport.airport?.latitude,
-                  departureAirport.airport?.longitude,
-                  job.airport?.latitude,
-                  job.airport?.longitude
-                )
-              : job.dist}
-          </Text>
-        </View>
-      )}
-    </View>
-
-    {!isSmall && (
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          paddingVertical: 2,
-          alignItems: "center",
-        }}
-      >
-        <View
-          style={{
-            width: "30%",
-            flexDirection: "row",
-            gap: 2,
-          }}
-        >
-          <View style={{ justifyContent: "center" }}>
-            <MaterialCommunityIcons
-              name="map-marker-distance"
-              size={16}
-              color="gray"
-            />
-          </View>
-          <Text>
-            {departureAirport !== null &&
-            departureAirport?.airport &&
-            job?.airport ? (
-              <Text>
-                {calculateDistanceNm(
-                  departureAirport.airport?.latitude,
-                  departureAirport.airport?.longitude,
-                  job.airport?.latitude,
-                  job.airport?.longitude
-                )}
-                Nm
-                <Text style={{ color: "lightgray" }}>{` (${job.dist})`}</Text>
-              </Text>
-            ) : (
-              <Text>{job.dist}Nm</Text>
-            )}
-          </Text>
-        </View>
-        <View style={{ width: "30%", alignItems: "center" }}>
-          <Text>Rank {job.rank}</Text>
-        </View>
-        <View
-          style={{
-            width: "30%",
-            justifyContent: "flex-end",
-            flexDirection: "row",
-            gap: 2,
-            alignItems: "center",
-            paddingVertical: 1,
-          }}
-        >
-          {job?.missionType && MISSION_TYPE[job.missionType] ? (
-            <View>{MISSION_TYPE[job.missionType].icon}</View>
-          ) : (
-            <Text>{job?.missionType || "Unkown"}</Text>
-          )}
-          {job.good && GOOD_TYPE[job.good.type] ? (
-            <View>{GOOD_TYPE[job.good.type].icon}</View>
-          ) : (
-            <Text>{job?.good?.name}</Text>
-          )}
-        </View>
-      </View>
-    )}
-
-    {!isSmall && job?.airport && (
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          paddingVertical: 2,
-          alignItems: "center",
-        }}
-      >
-        <View
-          style={{
-            width: "30%",
-            alignItems: "center",
-            flexDirection: "row",
-            gap: 2,
-          }}
-        >
-          <View style={{ justifyContent: "center" }}>
-            <MaterialCommunityIcons name="road" size={15} color="gray" />
-          </View>
-          <Text>{job.airport.longestRunwayLength}Nm</Text>
-        </View>
-        <View style={{ width: "30%", alignItems: "center" }}>
-          <Text>
-            {job?.airport.nrRunwayHard
-              ? "Hard"
-              : job.airport.nrRunwaySoft
-              ? "Soft"
-              : "Unkown"}
-          </Text>
-        </View>
-        <View style={{ width: "30%", alignItems: "flex-end" }}>
-          <View style={{ justifyContent: "center" }}>
-            <Text>
-              {job?.airport.nrRunwayLight > 0 ? (
-                <MaterialCommunityIcons
-                  name="alarm-light"
-                  size={16}
-                  color="orange"
-                />
-              ) : (
-                <MaterialCommunityIcons
-                  name="alarm-light-off"
-                  size={16}
-                  color="gray"
-                />
-              )}
-            </Text>
-          </View>
-        </View>
-      </View>
-    )}
-  </Pressable>
-);
 
 const handleAddJob = async (jobs: Job[], player: Player, server: string) => {
   for (const job of jobs) {
@@ -518,15 +287,10 @@ export default function TabTwoScreen() {
           }}
         >
           {jobsSelected.map((job, index) => (
-            <JobDetails
+            <JobDetailsCompact
               key={job.id + job.reward}
               job={job}
-              isSmall={true}
-              index={index + 1}
               isSelected={isJobSelected(job, jobsSelected)}
-              departureAirport={
-                jobsSelected.length > 1 ? jobsSelected[index - 1] : null
-              }
               handleSelect={() =>
                 setJobsSelected((prev) => {
                   if (prev.includes(job)) {
@@ -535,6 +299,9 @@ export default function TabTwoScreen() {
                     return [...prev, job];
                   }
                 })
+              }
+              departureAirport={
+                jobsSelected.length > 1 ? jobsSelected[index - 1] : null
               }
             />
           ))}
@@ -556,8 +323,12 @@ export default function TabTwoScreen() {
           <JobDetails
             key={job.item.id}
             job={job.item}
-            isSelected={isJobSelected(job.item, jobsSelected)}
-            freePayload={activeJobsPayload}
+            freePayload={player.freePayload}
+            departureAirport={
+              jobsSelected.length > 1
+                ? jobsSelected[jobsSelected.length - 1]
+                : null
+            }
             handleSelect={() =>
               setJobsSelected((prev) => {
                 if (prev.includes(job.item)) {
@@ -566,11 +337,6 @@ export default function TabTwoScreen() {
                   return [...prev, job.item];
                 }
               })
-            }
-            departureAirport={
-              jobsSelected.length > 0
-                ? jobsSelected[jobsSelected.length - 1]
-                : null
             }
           />
         )}

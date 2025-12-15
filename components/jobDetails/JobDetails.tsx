@@ -35,7 +35,7 @@ const JobDetails = ({
     }}
     onPress={
       activeOnPress
-        ? freePayload && freePayload > job.weight
+        ? freePayload && freePayload >= job.weight
           ? () => handleSelect((prev) => [...prev, job])
           : () =>
               eventEmitter.emit(
