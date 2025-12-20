@@ -1,5 +1,7 @@
 import CustomPressable from "@/components/customPressable";
 import FlightMap from "@/components/flightMap";
+import JobActiveDetails from "@/components/jobActiveDetails";
+import LoadingIndicator from "@/components/loadingIndicator";
 import ModalCustom from "@/components/modal/modal";
 import {
   createNotification,
@@ -17,7 +19,7 @@ import { PlaneJob } from "@/model/planeJobType";
 import { Player } from "@/model/playerType";
 import { fetchWithTimeout } from "@/service/serviceUtils";
 import { text } from "@/styling/commonStyle";
-import { loadHoursMinutes, LOCALE } from "@/utility/calendar";
+import { loadHoursMinutes } from "@/utility/calendar";
 import {
   calculateDistanceNm,
   loadEstimatedFlightTime,
@@ -164,96 +166,6 @@ const AircraftDetails = ({ aircraft }: { aircraft: Aircraft }) => (
   </View>
 );
 
-const ActiveJobsDetails = ({
-  job,
-  handleRemoveJob,
-  departureAirport,
-}: {
-  job: Job;
-  handleRemoveJob: () => Promise<void>;
-  departureAirport: Job | null;
-}) => (
-  <View>
-    <Text style={{ fontSize: 12, paddingLeft: 5 }}>
-      {new Date(job.expiration).toLocaleString(LOCALE)}
-    </Text>
-    <View
-      style={{
-        gap: 10,
-        backgroundColor: Colors.dark.secundary,
-        padding: 10,
-        borderRadius: 10,
-      }}
-    >
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        <Text style={text.title}>{job.nameAirport}</Text>
-        <CustomPressable
-          color={Colors.dark.accent}
-          text={"-"}
-          padding={10}
-          paddingVertical={5}
-          onPress={handleRemoveJob}
-        />
-      </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-        }}
-      >
-        <View style={{ width: "30%", alignItems: "flex-start" }}>
-          <Text>{job.arrival}</Text>
-        </View>
-        <View
-          style={{
-            width: "30%",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text>
-            {departureAirport !== null &&
-            departureAirport?.airport &&
-            job?.airport ? (
-              <Text>
-                {calculateDistanceNm(
-                  departureAirport.airport?.latitude,
-                  departureAirport.airport?.longitude,
-                  job.airport?.latitude,
-                  job.airport?.longitude
-                )}
-                Nm
-                <Text style={{ color: "lightgray" }}>{` (${job.dist})`}</Text>
-              </Text>
-            ) : (
-              <Text>{job.dist}Nm</Text>
-            )}
-          </Text>
-        </View>
-        <View style={{ width: "30%", alignItems: "flex-end" }}>
-          <Text>{job.reward} €</Text>
-        </View>
-      </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-        }}
-      >
-        <View style={{ width: "30%", alignItems: "flex-start" }}>
-          <Text>{job.weight} lbs</Text>
-        </View>
-        <View style={{ width: "30%", alignItems: "center" }}>
-          <Text>{job.pax} pax</Text>
-        </View>
-        <View style={{ width: "30%", alignItems: "flex-end" }}>
-          <Text>{job.xp} xp</Text>
-        </View>
-      </View>
-    </View>
-  </View>
-);
-
 const handleRemoveJob = async (
   job: Job,
   server: string,
@@ -322,10 +234,11 @@ export default function HomeScreen() {
     serverConfig: [server],
     server: [isServerOnline],
     player: [player, setPlayer],
+    hangar: [hangar, setHangar],
     setRefreshUser: setRefreshUser,
   } = useContext(AppContext);
 
-  const [hangar, setHangar] = useState({} as Hangar);
+  const [playerHangar, setPlayerHangar] = useState(hangar);
   const [aircraft, setAircraft] = useState({} as Aircraft);
   const [activeJobs, setActiveJobs] = useState<Job[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -333,22 +246,21 @@ export default function HomeScreen() {
   const [airport, setAirport] = useState({} as Airport);
   const [refresh, setRefresh] = useState(false);
   const [modal, setModal] = useState(false);
+  const [visible, setVisible] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       async function fetchData() {
-        const hangarJson = await fetchWithTimeout(
-          `http://${server}:8080/nf/hangar/player/${player.name}`
-        );
+        setLoading(true);
 
         let fuelWeight = 0;
-        if (hangarJson) {
-          const hangarData = (await hangarJson?.json()).data;
-          fuelWeight = hangarData.currentFuel;
-          setHangar(hangarData);
+        if (hangar) {
+          fuelWeight = hangar?.currentFuel || 0;
+          setPlayerHangar(hangar);
 
           const airportJson = await fetchWithTimeout(
-            `http://${server}:8080/nf/airport/${hangarData.location}`
+            `http://${server}:8080/nf/airport/${hangar.location}`
           );
 
           if (airportJson) {
@@ -388,7 +300,9 @@ export default function HomeScreen() {
 
         if (usablePayload) {
           jobsJson = await fetchWithTimeout(
-            `http://${server}:8080/nf/jobs?weight=${usablePayload}`
+            `http://${server}:8080/nf/jobs?weight=${usablePayload}`,
+            {},
+            5000
           );
         } else {
           jobsJson = await fetchWithTimeout(`http://${server}:8080/nf/jobs}`);
@@ -406,6 +320,7 @@ export default function HomeScreen() {
             const activeJobsData: PlaneJob[] = (await activeJobsJson?.json())
               .data;
 
+            // TODO IMPROVE FROM SERVER SIDE
             const jobsDetails: Job[] = activeJobsData
               .map((a) => jobsData?.find((j) => j.id == a.jobId))
               .filter((job): job is Job => job !== undefined);
@@ -422,13 +337,15 @@ export default function HomeScreen() {
             }));
           }
         }
+        setLoading(false);
       }
-      if (isServerOnline) fetchData();
-    }, [isServerOnline, refresh])
+      if (isServerOnline && hangar?.id) fetchData();
+    }, [isServerOnline, hangar, refresh])
   );
 
   return (
     <UsableScreen>
+      <LoadingIndicator isLoading={loading} />
       <NotificationBox />
       <ModalCustom
         padding={0}
@@ -439,12 +356,7 @@ export default function HomeScreen() {
       >
         <FlightMap
           location={airport}
-          airports={[
-            airport,
-            ...activeJobs
-              .map((j) => j.airport)
-              .filter((a): a is Airport => a !== null && a !== undefined),
-          ]}
+          jobs={[{ airport: airport } as Job, ...activeJobs]}
         />
       </ModalCustom>
       <PlayerHeader player={player} />
@@ -464,7 +376,7 @@ export default function HomeScreen() {
           }}
         />
       </View>
-      <HangarDetails hangar={hangar} />
+      <HangarDetails hangar={playerHangar} />
       <AircraftDetails aircraft={aircraft} />
       <View
         style={{
@@ -533,9 +445,9 @@ export default function HomeScreen() {
           alignItems: "center",
         }}
       >
-        {player.maxSpeed && hangar && (
+        {player.maxSpeed && playerHangar && (
           <Text>
-            {loadTimetable(hangar.location, activeJobs, player.maxSpeed)}
+            {loadTimetable(playerHangar.location, activeJobs, player.maxSpeed)}
           </Text>
         )}
       </View>
@@ -548,9 +460,11 @@ export default function HomeScreen() {
         }}
       >
         {activeJobs.map((job, index) => (
-          <ActiveJobsDetails
+          <JobActiveDetails
             key={job.id}
             job={job}
+            visible={visible}
+            setVisible={setVisible}
             handleRemoveJob={async () =>
               await handleRemoveJob(job, server, setRefresh)
             }

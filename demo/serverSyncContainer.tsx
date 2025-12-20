@@ -83,7 +83,7 @@ export const ServerSyncContainer = () => {
     const pingServer = async () => {
       try {
         const response = await fetchWithTimeout(
-          `http://${serverIp}:8080/api/v1/health`
+          `http://${serverIp}:8080/nf/v1/health`
         );
 
         if (!response.ok) {
@@ -98,14 +98,14 @@ export const ServerSyncContainer = () => {
 
         const data = await response.json();
 
-        if (!data?.data) {
-          data.message = "No message from server.";
+        if (!data?.status) {
+          data.status = "No message from server.";
         }
 
         setServerIsAvailable({
           visible: true,
           message: serverIsAvailable.message?.concat(
-            `\nConnected Successfully. ${data?.message}`
+            `\nConnected Successfully. ${data?.status}`
           ),
           type: "succ",
         });

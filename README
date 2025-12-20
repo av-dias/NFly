@@ -20,3 +20,12 @@
   - Job expiration time
   - Job Mission type
   - Cargo Good Type
+- 1.5.0
+  - Refresh player details
+  - APK icon
+  - Reusable JobDetails and JobDetailsCompact component
+  - Job information/requirements
+  - Flight Map update
+- 1.6.0
+  - Add player settings with basic features
+  - Allow multiple planes on hangar
