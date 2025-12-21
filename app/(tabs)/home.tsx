@@ -7,6 +7,7 @@ import {
   createNotification,
   NotificationBox,
 } from "@/components/notificationBox/NotificationBox";
+import PayloadMap from "@/components/payloadMap";
 import { Text, View } from "@/components/Themed";
 import UsableScreen from "@/components/usableScreen";
 import Colors from "@/constants/Colors";
@@ -27,7 +28,7 @@ import {
 import { eventEmitter, NotificationEvent } from "@/utility/eventEmitter";
 import { useFocusEffect } from "expo-router";
 import { Dispatch, useCallback, useContext, useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView } from "react-native";
 
 const PlayerHeader = ({ player }: { player: Player }) => (
   <View
@@ -245,7 +246,7 @@ export default function HomeScreen() {
   const [freePayload, setFreePayload] = useState(0);
   const [airport, setAirport] = useState({} as Airport);
   const [refresh, setRefresh] = useState(false);
-  const [modal, setModal] = useState(false);
+  const [modal, setModal] = useState({ config: "", visible: false });
   const [visible, setVisible] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -266,6 +267,7 @@ export default function HomeScreen() {
           if (airportJson) {
             const airportData = (await airportJson?.json()).data;
             setAirport(airportData);
+            setPlayer((p) => ({ ...p, airport: airportData }));
           }
         }
 
@@ -350,14 +352,17 @@ export default function HomeScreen() {
       <ModalCustom
         padding={0}
         size={10}
-        modalVisible={modal}
-        setModalVisible={() => setModal(false)}
+        modalVisible={modal.visible}
+        setModalVisible={() => setModal({ config: "", visible: false })}
         hasColor={false}
       >
-        <FlightMap
-          location={airport}
-          jobs={[{ airport: airport } as Job, ...activeJobs]}
-        />
+        {modal.config === "Map" && (
+          <FlightMap
+            location={airport}
+            jobs={[{ airport: airport } as Job, ...activeJobs]}
+          />
+        )}
+        {modal.config === "Payload" && <PayloadMap player={player} />}
       </ModalCustom>
       <PlayerHeader player={player} />
       <View
@@ -433,14 +438,14 @@ export default function HomeScreen() {
             paddingVertical={5}
             color={Colors.dark.accent}
             text={"Map"}
-            onPress={() => setModal(true)}
+            onPress={() => setModal({ config: "Map", visible: true })}
           />
         )}
       </View>
       <View
         style={{
           flexDirection: "row",
-          paddingBottom: 10,
+          paddingVertical: 5,
           justifyContent: "center",
           alignItems: "center",
         }}
@@ -451,6 +456,14 @@ export default function HomeScreen() {
           </Text>
         )}
       </View>
+      <View>
+        <CustomPressable
+          color={Colors.dark.accent}
+          text={"Payload"}
+          padding={5}
+          onPress={() => setModal({ config: "Payload", visible: true })}
+        />
+      </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -459,38 +472,23 @@ export default function HomeScreen() {
           gap: 10,
         }}
       >
-        {activeJobs.map((job, index) => (
-          <JobActiveDetails
-            key={job.id}
-            job={job}
-            visible={visible}
-            setVisible={setVisible}
-            handleRemoveJob={async () =>
-              await handleRemoveJob(job, server, setRefresh)
-            }
-            departureAirport={
-              activeJobs.length > 1 ? activeJobs[index - 1] : null
-            }
-          />
-        ))}
+        {player?.airport &&
+          activeJobs.map((job, index) => (
+            <JobActiveDetails
+              key={job.id}
+              job={job}
+              visible={visible}
+              setVisible={setVisible}
+              handleRemoveJob={async () =>
+                await handleRemoveJob(job, server, setRefresh)
+              }
+              departureAirport={
+                index > 0 ? activeJobs[index - 1]?.airport : player?.airport
+              }
+              isSmall={true}
+            />
+          ))}
       </ScrollView>
     </UsableScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: "80%",
-  },
-});

@@ -5,11 +5,9 @@ import { text } from "@/styling/commonStyle";
 import { loadHoursMinutes } from "@/utility/calendar";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { Dimensions, Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import { Text, View } from "../Themed";
 import CustomPressable from "../customPressable";
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const calculateBounds = (jobs: Job[]) => {
   if (jobs.length === 0) {
@@ -40,14 +38,17 @@ const toPercentageCoordinates = (
   minLat: number,
   maxLat: number,
   minLon: number,
-  maxLon: number
+  maxLon: number,
+  isSmall: boolean
 ) => {
   // Convert longitude to percentage (left)
-  const leftPercentage = ((lon - minLon) / (maxLon - minLon)) * 80;
+  const leftPercentage =
+    ((lon - minLon) / (maxLon - minLon)) * (isSmall ? 50 : 80);
 
   // Convert latitude to percentage (top)
   // Note: Latitude is inverted because higher lat = lower on the screen
-  const topPercentage = ((maxLat - lat) / (maxLat - minLat)) * 80;
+  const topPercentage =
+    ((maxLat - lat) / (maxLat - minLat)) * (isSmall ? 40 : 80);
 
   return { leftPercentage, topPercentage };
 };
@@ -58,19 +59,24 @@ const toPixelCoordinates = (
   screenWidth: number,
   screenHeight: number
 ) => {
-  const x = (leftPercentage / 100) * screenWidth;
-  const y = (topPercentage / 100) * screenHeight;
+  const x = (leftPercentage / 100) * (screenWidth * 1);
+  const y = (topPercentage / 100) * (screenHeight * 1);
 
   return { x, y };
 };
 
 const FlightMap = ({
   location,
-  jobs: jobs,
+  jobs,
+  isSmall = false,
 }: {
   location: Airport;
   jobs: Job[];
+  isSmall?: boolean;
 }) => {
+  const [screenWidth, setScreenWidth] = useState(0);
+  const [screenHeight, setScreenHeight] = useState(0);
+
   const [disabledList, setDisabledList] = useState<number[]>([]);
   const [coordinates, setCoordenates] = useState<
     ((Job & { leftPercentage: number; topPercentage: number }) | null)[]
@@ -91,7 +97,8 @@ const FlightMap = ({
           minLat,
           maxLat,
           minLon,
-          maxLon
+          maxLon,
+          isSmall
         );
 
         const { x, y } = toPixelCoordinates(
@@ -105,13 +112,20 @@ const FlightMap = ({
       });
 
       setCoordenates(coordinatesList);
-    }, [disabledList])
+    }, [disabledList, screenHeight, screenWidth])
   );
 
   return (
     <View style={styles.container}>
       {/* Black background */}
-      <View style={styles.map}>
+      <View
+        style={styles.map}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setScreenHeight(height);
+          setScreenWidth(width);
+        }}
+      >
         {disabledList.length > 0 && (
           <View
             style={{
@@ -138,10 +152,11 @@ const FlightMap = ({
                   {
                     left: `${point.leftPercentage}%`,
                     top: `${point.topPercentage}%`,
-                    width: 60,
-                    height: 60,
+                    width: 40,
+                    height: 40,
                     justifyContent: "center",
                     alignItems: "center",
+                    margin: isSmall ? 0 : 15,
                   },
                 ]}
                 onPress={() => setDisabledList((l) => [...l, index])}
@@ -155,24 +170,27 @@ const FlightMap = ({
                       index === 0 ? Colors.dark.accent : Colors.dark.warning,
                   }}
                 />
-                <Text style={[text.mdTextSize, text.bold]}>
-                  {point.airport?.ident}
-                </Text>
-                {new Date(point.expiration).getDate() ==
-                  new Date().getDate() && (
-                  <>
-                    <Text style={text.mdTextSize}>
-                      {new Date(point.expiration).toLocaleTimeString()}
-                    </Text>
-                    <Text style={text.mdTextSize}>
-                      {loadHoursMinutes(
-                        (new Date(point.expiration).getTime() -
-                          new Date().getTime()) /
-                          (1000 * 60 * 60)
-                      )}
-                    </Text>
-                  </>
+                {!isSmall && (
+                  <Text style={[text.mdTextSize, text.bold]}>
+                    {point.airport?.ident}
+                  </Text>
                 )}
+                {!isSmall &&
+                  new Date(point.expiration).getDate() ==
+                    new Date().getDate() && (
+                    <>
+                      <Text style={text.mdTextSize}>
+                        {new Date(point.expiration).toLocaleTimeString()}
+                      </Text>
+                      <Text style={text.mdTextSize}>
+                        {loadHoursMinutes(
+                          (new Date(point.expiration).getTime() -
+                            new Date().getTime()) /
+                            (1000 * 60 * 60)
+                        )}
+                      </Text>
+                    </>
+                  )}
               </Pressable>
             )
         )}
@@ -188,8 +206,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   map: {
-    width: "100%",
-    height: "100%",
+    flex: 1,
     backgroundColor: Colors.dark.secundaryBackground,
     position: "relative",
   },
@@ -208,7 +225,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    margin: 15,
   },
 });
 
