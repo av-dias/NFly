@@ -1,5 +1,6 @@
 import Colors from "@/constants/Colors";
 import { MISSION_TYPE } from "@/constants/MissionType";
+import { Airport } from "@/model/airportType";
 import { Job } from "@/model/jobType";
 import { LOCALE } from "@/utility/calendar";
 import { Feather } from "@expo/vector-icons";
@@ -17,13 +18,15 @@ const JobActiveDetails = ({
   handleRemoveJob,
   departureAirport,
   activeOnPress = false,
+  isSmall = false,
 }: {
   job: Job;
   visible: number;
   handleRemoveJob: () => Promise<void>;
   setVisible: Dispatch<React.SetStateAction<number>>;
-  departureAirport: Job | null;
+  departureAirport: Airport | null | undefined;
   activeOnPress?: boolean;
+  isSmall?: boolean;
 }) => {
   const [message, setMessage] = useState("");
   const fadeAnim = new Animated.Value(0);
@@ -114,6 +117,7 @@ const JobActiveDetails = ({
           activeOnPress={activeOnPress}
           handleSelect={() => {}}
           departureAirport={departureAirport}
+          isSmall={isSmall}
         />
       )}
     </View>
