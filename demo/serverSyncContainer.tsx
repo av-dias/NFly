@@ -2,13 +2,17 @@
 /** LIVE DEMO AREA BEGIN PLEASE REMOVE THIS CODE */
 /*********************************************** */
 
+import { Text, View } from "@/components/Themed";
 import { isValidString } from "@/utility/inputValidation";
-import { useContext, useEffect, useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { TextInput } from "react-native";
 import CustomPressable from "../components/customPressable";
 import { AppContext } from "../contexts/appContext";
 // Add color import or definition
-import color from "../constants/Colors";
+import { addIpAddress, getIpAddresses } from "@/storage/localStorage";
+import { text } from "@/styling/commonStyle";
+import { useFocusEffect } from "expo-router";
+import { default as color, default as Colors } from "../constants/Colors";
 export const defaultServerIp = "192.168.";
 // Local IP Regex
 const localIPRegex: RegExp =
@@ -59,6 +63,9 @@ export const ServerSyncContainer = () => {
   const [serverIp, setServerIp] = useState<string>(
     server != "" ? server : defaultServerIp
   );
+
+  const [ips, setIps] = useState<string[]>([]);
+
   const [notificationMessage, setNotificationMessage] =
     useState<NotificationMessageType>({
       visible: false,
@@ -79,14 +86,39 @@ export const ServerSyncContainer = () => {
   }, [notificationMessage]);
 
   //** Attempt to ping health endpoint */
-  useEffect(() => {
-    const pingServer = async () => {
-      try {
-        const response = await fetchWithTimeout(
-          `http://${serverIp}:8080/nf/v1/health`
-        );
+  useFocusEffect(
+    useCallback(() => {
+      const pingServer = async () => {
+        try {
+          const response = await fetchWithTimeout(
+            `http://${serverIp}:8080/nf/v1/health`
+          );
 
-        if (!response.ok) {
+          if (!response.ok) {
+            setServerIsAvailable({
+              visible: true,
+              message: serverIsAvailable.message?.concat(
+                "\nHealth endpoint not found."
+              ),
+              type: "err",
+            });
+          }
+
+          const data = await response.json();
+
+          if (!data?.status) {
+            data.status = "No message from server.";
+          }
+
+          setServerIsAvailable({
+            visible: true,
+            message: serverIsAvailable.message?.concat(
+              `\nConnected Successfully. ${data?.status}`
+            ),
+            type: "succ",
+          });
+        } catch (e) {
+          console.log(e);
           setServerIsAvailable({
             visible: true,
             message: serverIsAvailable.message?.concat(
@@ -95,39 +127,25 @@ export const ServerSyncContainer = () => {
             type: "err",
           });
         }
-
-        const data = await response.json();
-
-        if (!data?.status) {
-          data.status = "No message from server.";
-        }
-
-        setServerIsAvailable({
-          visible: true,
-          message: serverIsAvailable.message?.concat(
-            `\nConnected Successfully. ${data?.status}`
-          ),
-          type: "succ",
-        });
-      } catch (e) {
-        console.log(e);
-        setServerIsAvailable({
-          visible: true,
-          message: serverIsAvailable.message?.concat(
-            "\nHealth endpoint not found."
-          ),
-          type: "err",
-        });
+      };
+      if (serverIsAvailable.visible && notificationMessage.type === "succ") {
+        pingServer();
       }
-    };
+    }, [notificationMessage])
+  );
 
-    if (serverIsAvailable.visible && notificationMessage.type === "succ") {
-      pingServer();
-    }
-  }, [notificationMessage]);
+  useFocusEffect(
+    useCallback(() => {
+      async function fetchServers() {
+        const ipsLoaded = await getIpAddresses();
+        setIps(ipsLoaded);
+      }
+      fetchServers();
+    }, [])
+  );
 
   return (
-    <>
+    <View style={{ gap: 10, alignItems: "center" }}>
       <CustomPressable
         color={color.light.accent}
         text={"Sync Server"}
@@ -155,7 +173,7 @@ export const ServerSyncContainer = () => {
           <CustomPressable
             color={color.light.success}
             text={"Apply"}
-            onPress={() => {
+            onPress={async () => {
               if (isServerIpValid(serverIp.trim())) {
                 setNotificationMessage({
                   visible: true,
@@ -166,6 +184,7 @@ export const ServerSyncContainer = () => {
                 // Set server IP in context
                 // This will be used by the app to make API calls
                 setServer(serverIp);
+                await addIpAddress(serverIp);
 
                 setServerIsAvailable({
                   visible: true,
@@ -212,8 +231,48 @@ export const ServerSyncContainer = () => {
           />
         </>
       )}
-      <Text>{`http://${serverIp}:8080/api/v1/health`}</Text>
-    </>
+      <View>
+        <Text>{`http://${serverIp}:8080/api/v1/health`}</Text>
+      </View>
+      {ips.length > 0 && (
+        <View style={{ gap: 10, paddingTop: 20 }}>
+          <View style={{ alignItems: "center" }}>
+            <Text style={[text.title]}>Saved Servers</Text>
+          </View>
+          {ips.map((ip) => (
+            <CustomPressable
+              key={ip}
+              color={Colors.dark.secundary}
+              text={ip}
+              onPress={async () => {
+                if (isServerIpValid(ip.trim())) {
+                  setNotificationMessage({
+                    visible: true,
+                    type: "succ",
+                    message: "Server address successfully stored.",
+                  });
+
+                  // Set server IP in context
+                  // This will be used by the app to make API calls
+                  setServer(ip);
+                  setServerIp(ip);
+                  setServerIsAvailable({
+                    visible: true,
+                    message: "Trying to ping server...",
+                  });
+                } else {
+                  setNotificationMessage({
+                    visible: true,
+                    type: "err",
+                    message: getRandomMessage(),
+                  });
+                }
+              }}
+            />
+          ))}
+        </View>
+      )}
+    </View>
   );
 };
 /*********************************************** */
