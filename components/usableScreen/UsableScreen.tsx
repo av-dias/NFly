@@ -14,7 +14,7 @@ const UsableScreen: React.FC<PropsWithChildren> = (props) => {
         padding: 20,
         paddingTop: 40,
         gap: 10,
-        backgroundColor: Colors.dark.background,
+        backgroundColor: Colors.dark.usableBackground,
       }}
     >
       {props.children}

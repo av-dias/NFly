@@ -76,7 +76,6 @@ const AppContextProvider = ({ children }: { children: any }) => {
 
           if (hangarJson) {
             const hangarData = (await hangarJson?.json()).data;
-            console.log(hangarData)
             setHangar(hangarData);
           }
         }

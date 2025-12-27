@@ -1,4 +1,4 @@
-import { Text, Pressable } from "react-native";
+import { Pressable, Text } from "react-native";
 
 type Props = {
   color: string;
@@ -20,6 +20,7 @@ const CustomPressable: React.FC<Props> = (props) => {
           opacity: pressed ? props.onPress && 0.8 : 1,
           marginHorizontal: pressed ? 1 : 0,
           marginTop: pressed ? 1 : 0,
+          zIndex: 10,
         },
       ]}
       onPress={props.onPress}
