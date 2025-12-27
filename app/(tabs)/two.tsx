@@ -6,8 +6,10 @@ import { NotificationBox } from "@/components/notificationBox/NotificationBox";
 import { Text, View } from "@/components/Themed";
 import UsableScreen from "@/components/usableScreen";
 import Colors from "@/constants/Colors";
+import { GOOD_TYPE } from "@/constants/GoodType";
 import { AppContext } from "@/contexts/appContext";
 import { Job } from "@/model/jobType";
+import { PlaneJob } from "@/model/planeJobType";
 import { Player } from "@/model/playerType";
 import { fetchWithTimeout } from "@/service/serviceUtils";
 import { text } from "@/styling/commonStyle";
@@ -20,7 +22,13 @@ import { delay } from "@/utility/timer";
 import Slider from "@react-native-community/slider";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useContext, useState } from "react";
-import { FlatList, ScrollView, StyleSheet } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+} from "react-native";
 import LoadingIndicator from "../../components/loadingIndicator";
 
 const handleAddJob = async (jobs: Job[], player: Player, server: string) => {
@@ -60,23 +68,48 @@ export default function TabTwoScreen() {
   } = useContext(AppContext);
 
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [excess, setExcess] = useState(false);
   const [modal, setModal] = useState(false);
   const [refresh, setRefresh] = useState(false);
   const [range, setRange] = useState<number>(loadRange(player));
   const [jobsSelected, setJobsSelected] = useState<Job[]>([]);
-  const [activeJobsPayload, setActiveJobsPayload] = useState<number>(0);
+  const [freePayload, setFreePayload] = useState<number>(
+    loadAvailablePayload(
+      player.freePayload ?? player.usablePayload,
+      jobsSelected
+    )
+  );
+  const [filter, setFilter] = useState(-1);
+  const [activeJobs, setActiveJobs] = useState<number[]>([]);
   const [isLoading, setLoading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       async function fetchData() {
         setLoading(true);
-        const payload = loadAvailablePayload(
-          player.freePayload ?? player.usablePayload,
-          jobsSelected
+
+        // Check active jobs to filter
+        const activeJobsJson = await fetchWithTimeout(
+          `http://${server}:8080/nf/plane-jobs`
         );
-        setActiveJobsPayload(payload);
+
+        if (activeJobsJson) {
+          const activeJobsData: PlaneJob[] = (await activeJobsJson?.json())
+            .data;
+          setActiveJobs(activeJobsData.map((a) => a.jobId));
+        }
+
+        // Load jobs based on payload available
+        let payload = freePayload;
+
+        if (jobsSelected.length > 0) {
+          payload = loadAvailablePayload(
+            player.freePayload ?? player.usablePayload,
+            jobsSelected
+          );
+          setFreePayload(payload);
+        }
+
+        if (!freePayload || isNaN(freePayload)) payload = 1;
 
         if (payload) {
           const jobsJson = await fetchWithTimeout(
@@ -88,7 +121,6 @@ export default function TabTwoScreen() {
             setJobs(jobsData);
 
             if (jobsData?.length < 3) {
-              setExcess(true);
               const alternativeJobJson = await fetchWithTimeout(
                 `http://${server}:8080/nf/jobs?weight=${payload * 2}`
               );
@@ -101,15 +133,13 @@ export default function TabTwoScreen() {
                   jobsAlternativeData.sort((j1, j2) => j1.weight - j2.weight)
                 );
               }
-            } else {
-              setExcess(false);
             }
           }
         }
         setLoading(false);
       }
       if (isServerOnline) fetchData();
-    }, [isServerOnline, player, range, jobsSelected, refresh])
+    }, [isServerOnline, player, range, jobsSelected, refresh, freePayload])
   );
 
   return (
@@ -177,6 +207,11 @@ export default function TabTwoScreen() {
             text={"Refresh"}
             padding={5}
             onPress={() => {
+              const payload = loadAvailablePayload(
+                player.freePayload ?? player.usablePayload,
+                jobsSelected
+              );
+              setFreePayload(payload);
               setRefresh((r) => !r);
               setJobsSelected([]);
             }}
@@ -198,7 +233,27 @@ export default function TabTwoScreen() {
                 loadEstimatedFlightTime(range, player.maxSpeed)
               )}
             </Text>
-            <Text>Free Payload {activeJobsPayload}lb</Text>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <Text>Free Payload</Text>
+              <TextInput
+                style={{
+                  textAlign: "right",
+                  backgroundColor: Colors.dark.secundary,
+                  borderRadius: 10,
+                  padding: 10,
+                }}
+                value={freePayload.toString() || "0"}
+                onChangeText={(t) => {
+                  if (t.trim() == "") t = "1";
+                  setFreePayload(Number(t));
+                }}
+                keyboardType="number-pad"
+                placeholder="0"
+              />
+              <Text>lb</Text>
+            </View>
           </View>
         )}
       </View>
@@ -276,6 +331,41 @@ export default function TabTwoScreen() {
           )}
         </View>
       )}
+      <View>
+        <ScrollView
+          horizontal={true}
+          contentContainerStyle={{
+            width: "100%",
+            justifyContent: "space-between",
+          }}
+        >
+          {Object.values(GOOD_TYPE).map(
+            (details, index) =>
+              details?.icon && (
+                <Pressable
+                  key={details.name}
+                  style={{
+                    padding: 10,
+                    backgroundColor:
+                      filter === index
+                        ? Colors.dark.secundary
+                        : Colors.dark.glass,
+                    borderRadius: 10,
+                  }}
+                  onPress={() => {
+                    if (filter === index) {
+                      setFilter(-1);
+                    } else {
+                      setFilter(index);
+                    }
+                  }}
+                >
+                  {details.icon}
+                </Pressable>
+              )
+          )}
+        </ScrollView>
+      </View>
       {jobsSelected?.length > 0 && (
         <ScrollView
           horizontal={true}
@@ -314,11 +404,14 @@ export default function TabTwoScreen() {
           gap: 15,
         }}
         showsVerticalScrollIndicator={false}
-        data={jobs?.filter(
-          (job) =>
-            !jobsSelected.some((j) => j.id === job.id) &&
-            !(jobsSelected.length > 0 && job.stackable !== 1)
-        )}
+        data={jobs
+          .filter((job) => !activeJobs.includes(job.id))
+          ?.filter(
+            (job) =>
+              !jobsSelected.some((j) => j.id === job.id) &&
+              !(jobsSelected.length > 0 && job.stackable !== 1)
+          )
+          .filter((job) => (filter === -1 ? true : job.good?.type === filter))}
         renderItem={(job) => (
           <JobDetails
             key={job.item.id}
@@ -326,8 +419,8 @@ export default function TabTwoScreen() {
             freePayload={player.freePayload}
             departureAirport={
               jobsSelected.length > 1
-                ? jobsSelected[jobsSelected.length - 1]
-                : null
+                ? jobsSelected[jobsSelected.length - 1].airport
+                : player?.airport
             }
             handleSelect={() =>
               setJobsSelected((prev) => {
@@ -338,6 +431,7 @@ export default function TabTwoScreen() {
                 }
               })
             }
+            isSmall={true}
           />
         )}
         keyExtractor={(item) => item.id.toString()} // or a unique ID from your data
