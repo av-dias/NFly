@@ -1,3 +1,5 @@
+import { Airport } from "./airportType";
+
 export type Player = {
   id: number;
   name: string;
@@ -13,4 +15,5 @@ export type Player = {
   maxDistance?: number;
   fuelPercentage?: number;
   maxSpeed?: number;
+  airport?:Airport
 };
